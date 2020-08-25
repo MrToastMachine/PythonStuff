@@ -1,3 +1,7 @@
-x = -34
+def fuc():
+    if True:
+        print("Boob")
+        return True
 
-print(abs(x))
+
+fuc()
