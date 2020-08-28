@@ -4,6 +4,7 @@ import pygame
 pygame.init()
 RES = (600, 400)
 win = pygame.display.set_mode(RES)
+pygame.display.set_caption("Chess")
 
 TILE_WIDTH = 50
 
@@ -16,11 +17,13 @@ class Piece():      #BASE CLASS FOR ALL PIECES
     pieceSelected = [-1, -1]
     isOccupied = False
     moves = 0
-    turn = 'w'
+    whiteTurn = True
+    blackPoints = 0
+    whitePoints = 0
 
-    def __init__(self, name, initPos, sprite, colour='b'):   #INITIAL SETUP OF PIECE
+    def __init__(self, name, initPos, sprite, isWhite):   #INITIAL SETUP OF PIECE
         self.name = name
-        self.colour = colour
+        self.isWhite = isWhite
         self.origin = initPos
         self.tile = initPos
         self.img = sprite
@@ -39,11 +42,15 @@ class Piece():      #BASE CLASS FOR ALL PIECES
     def movePiece(self):
         self.tile = Piece.targetTile
         Piece.moves += 1
-        if Piece.turn == 'w':
-            Piece.turn = 'b'
-        elif Piece.turn == 'b':
-            Piece.turn = 'w'
+        Piece.whiteTurn = not Piece.whiteTurn
         reset()
+
+    def giveMePoints(self):
+        if self.isWhite:
+            Piece.blackPoints += self.value
+        else:
+            Piece.whitePoints += self.value
+
 
     @classmethod
     def drawPiece(cls):
@@ -51,52 +58,103 @@ class Piece():      #BASE CLASS FOR ALL PIECES
             position = [x*TILE_WIDTH for x in piece.tile]
             win.blit(piece.img, (position))
 
+#  and (piece_on_target_tile == None or piece_on_target_tile.isWhite != piece.isWhite)
+
     @classmethod
     def checkValid(cls, piece):
-        if (Piece.targetTile != piece.tile) and not Piece.getPieceOnTile(Piece.targetTile):
+        piece_on_target_tile = Piece.getPieceOnTile(Piece.targetTile)
+        if (Piece.targetTile != piece.tile): # and not Piece.getPieceOnTile(Piece.targetTile)
             dX = abs(Piece.targetTile[0] - piece.tile[0])
             dY = abs(Piece.targetTile[1] - piece.tile[1])
             if piece.name == "King":
                 if (dX <= 1) and (dY <= 1):
-                    piece.movePiece()
+                    if piece_on_target_tile != None and piece_on_target_tile.isWhite != piece.isWhite:
+                        Piece.pieces.pop(Piece.pieces.index(piece_on_target_tile))
+                        Piece.giveMePoints(piece_on_target_tile)
+                        del(piece_on_target_tile)
+                        piece.movePiece()
+                    elif not piece_on_target_tile:
+                        piece.movePiece()
             elif piece.name == "Rook":
                 if (dX == 0 or dY == 0):
-                    piece.movePiece()
+                    if piece_on_target_tile != None and piece_on_target_tile.isWhite != piece.isWhite:
+                        Piece.pieces.pop(Piece.pieces.index(piece_on_target_tile))
+                        Piece.giveMePoints(piece_on_target_tile)
+                        del(piece_on_target_tile)
+                        piece.movePiece()
+                    elif not piece_on_target_tile:
+                        piece.movePiece()
             elif piece.name == "Bishop":
                 if dX == dY:
-                    piece.movePiece()
+                    if piece_on_target_tile != None and piece_on_target_tile.isWhite != piece.isWhite:
+                        Piece.pieces.pop(Piece.pieces.index(piece_on_target_tile))
+                        Piece.giveMePoints(piece_on_target_tile)
+                        del(piece_on_target_tile)
+                        piece.movePiece()
+                    elif not piece_on_target_tile:
+                        piece.movePiece()
             elif piece.name == "Queen":
                 if (dX == dY) or (dX == 0 or dY == 0):
-                    piece.movePiece()
+                    if piece_on_target_tile != None and piece_on_target_tile.isWhite != piece.isWhite:
+                        Piece.pieces.pop(Piece.pieces.index(piece_on_target_tile))
+                        Piece.giveMePoints(piece_on_target_tile)
+                        del(piece_on_target_tile)
+                        piece.movePiece()
+                    elif not piece_on_target_tile:
+                        piece.movePiece()
             elif piece.name == "Knight":
                 if (dX == 2 and dY == 1) or (dX == 1 and dY == 2):
-                    piece.movePiece()
+                    if piece_on_target_tile != None and piece_on_target_tile.isWhite != piece.isWhite:
+                        Piece.pieces.pop(Piece.pieces.index(piece_on_target_tile))
+                        Piece.giveMePoints(piece_on_target_tile)
+                        del(piece_on_target_tile)
+                        piece.movePiece()
+                    elif not piece_on_target_tile:
+                        piece.movePiece()
             elif piece.name == "Pawn":
-                if (dX == 0):
-                    if piece.colour == 'b':
-                        if Piece.targetTile[1] - piece.tile[1] == 1:
-                            piece.movePiece()
-                        elif Piece.targetTile[1] - piece.tile[1] == 2 and piece.tile == piece.origin:
-                            piece.movePiece()
-                    else:
+                if (dX == 0) and not piece_on_target_tile:
+                    if piece.isWhite:
                         if Piece.targetTile[1] - piece.tile[1] == -1:
                             piece.movePiece()
                         elif Piece.targetTile[1] - piece.tile[1] == -2 and piece.tile == piece.origin:
                             piece.movePiece()
+                    else:
+                        if Piece.targetTile[1] - piece.tile[1] == 1:
+                            piece.movePiece()
+                        elif Piece.targetTile[1] - piece.tile[1] == 2 and piece.tile == piece.origin:
+                            piece.movePiece()
+                elif dX == dY == 1:
+                    if piece.isWhite and Piece.targetTile[1] - piece.tile[1] < 0:
+                        if piece_on_target_tile and (not piece_on_target_tile.isWhite):
+                            Piece.pieces.pop(Piece.pieces.index(piece_on_target_tile))
+                            Piece.giveMePoints(piece_on_target_tile)
+                            del(piece_on_target_tile)
+                            piece.movePiece()
+                    elif not piece.isWhite and Piece.targetTile[1] - piece.tile[1] > 0:
+                        if piece_on_target_tile and piece_on_target_tile.isWhite:
+                            Piece.pieces.pop(Piece.pieces.index(piece_on_target_tile))
+                            Piece.giveMePoints(piece_on_target_tile)
+                            del(piece_on_target_tile)
+                            piece.movePiece()
+                    else:
+                        print("NO PIECE THERE")
+
+
 
     @classmethod
     def getPieceOnTile(cls, tile):
         for piece in Piece.pieces:
             if (tile == piece.tile):
                 return piece
-                break
         return None
 
     @classmethod
     def returnToOrigin(cls):
         Piece.moves = 0
+        Piece.whitePoints = 0
+        Piece.blackPoints = 0
         reset()
-        Piece.turn = 'w'
+        Piece.whiteTurn = True
         for piece in Piece.pieces:
             piece.tile = piece.origin
 
@@ -117,53 +175,67 @@ black = (0, 0, 0)
 white = (255, 255, 255)
 
 #SPRITES
-board = pygame.image.load('PythonStuff/Chess/background.jpg')
+MAIN_FILE_PATH = "Chess/" # Yoga Laptop
+#MAIN_FILE_PATH = "PythonStuff/Chess/" # Y70 Laptop
+
+board = pygame.image.load(MAIN_FILE_PATH + 'background.jpg')
+parchment = pygame.image.load(MAIN_FILE_PATH + 'Worn-Paper-Texture.jpg')
+
 
 #PIECES
-BKing = Piece("King", [3,0], pygame.image.load('PythonStuff/Chess/BKing.png'), 'b')
-BQueen = Piece("Queen", [4,0], pygame.image.load('PythonStuff/Chess/BQueen.png'), 'b')
-BRookL = Piece("Rook", [7,0], pygame.image.load('PythonStuff/Chess/BRook.png'), 'b')
-BRookR = Piece("Rook", [0,0], pygame.image.load('PythonStuff/Chess/BRook.png'), 'b')
-BBishopL = Piece("Bishop", [2,0], pygame.image.load('PythonStuff/Chess/BBishop.png'), 'b')
-BBishopR = Piece("Bishop", [5,0], pygame.image.load('PythonStuff/Chess/BBishop.png'), 'b')
-BKnightL = Piece("Knight", [6,0], pygame.image.load('PythonStuff/Chess/BKnight.png'), 'b')
-BKnightR = Piece("Knight", [1,0], pygame.image.load('PythonStuff/Chess/BKnight.png'), 'b')
-BPawn1 = Piece("Pawn", [0,1], pygame.image.load('PythonStuff/Chess/BPawn.png'), 'b')
-BPawn2 = Piece("Pawn", [1,1], pygame.image.load('PythonStuff/Chess/BPawn.png'), 'b')
-BPawn3 = Piece("Pawn", [2,1], pygame.image.load('PythonStuff/Chess/BPawn.png'), 'b')
-BPawn4 = Piece("Pawn", [3,1], pygame.image.load('PythonStuff/Chess/BPawn.png'), 'b')
-BPawn5 = Piece("Pawn", [4,1], pygame.image.load('PythonStuff/Chess/BPawn.png'), 'b')
-BPawn6 = Piece("Pawn", [5,1], pygame.image.load('PythonStuff/Chess/BPawn.png'), 'b')
-BPawn7 = Piece("Pawn", [6,1], pygame.image.load('PythonStuff/Chess/BPawn.png'), 'b')
-BPawn8 = Piece("Pawn", [7,1], pygame.image.load('PythonStuff/Chess/BPawn.png'), 'b')
+BKing = Piece("King", [3,0], pygame.image.load(MAIN_FILE_PATH + 'BKing.png'), False)
+BQueen = Piece("Queen", [4,0], pygame.image.load(MAIN_FILE_PATH + 'BQueen.png'), False)
+BRookL = Piece("Rook", [7,0], pygame.image.load(MAIN_FILE_PATH + 'BRook.png'), False)
+BRookR = Piece("Rook", [0,0], pygame.image.load(MAIN_FILE_PATH + 'BRook.png'), False)
+BBishopL = Piece("Bishop", [2,0], pygame.image.load(MAIN_FILE_PATH + 'BBishop.png'), False)
+BBishopR = Piece("Bishop", [5,0], pygame.image.load(MAIN_FILE_PATH + 'BBishop.png'), False)
+BKnightL = Piece("Knight", [6,0], pygame.image.load(MAIN_FILE_PATH + 'BKnight.png'), False)
+BKnightR = Piece("Knight", [1,0], pygame.image.load(MAIN_FILE_PATH + 'BKnight.png'), False)
+BPawn1 = Piece("Pawn", [0,1], pygame.image.load(MAIN_FILE_PATH + 'BPawn.png'), False)
+BPawn2 = Piece("Pawn", [1,1], pygame.image.load(MAIN_FILE_PATH + 'BPawn.png'), False)
+BPawn3 = Piece("Pawn", [2,1], pygame.image.load(MAIN_FILE_PATH + 'BPawn.png'), False)
+BPawn4 = Piece("Pawn", [3,1], pygame.image.load(MAIN_FILE_PATH + 'BPawn.png'), False)
+BPawn5 = Piece("Pawn", [4,1], pygame.image.load(MAIN_FILE_PATH + 'BPawn.png'), False)
+BPawn6 = Piece("Pawn", [5,1], pygame.image.load(MAIN_FILE_PATH + 'BPawn.png'), False)
+BPawn7 = Piece("Pawn", [6,1], pygame.image.load(MAIN_FILE_PATH + 'BPawn.png'), False)
+BPawn8 = Piece("Pawn", [7,1], pygame.image.load(MAIN_FILE_PATH + 'BPawn.png'), False)
 
-WKing = Piece("King", [3,7], pygame.image.load('PythonStuff/Chess/WKing.png'), 'w')
-WQueen = Piece("Queen", [4,7], pygame.image.load('PythonStuff/Chess/WQueen.png'), 'w')
-WRookL = Piece("Rook", [0,7], pygame.image.load('PythonStuff/Chess/WRook.png'), 'w')
-WRookR = Piece("Rook", [7,7], pygame.image.load('PythonStuff/Chess/WRook.png'), 'w')
-WBishopL = Piece("Bishop", [5,7], pygame.image.load('PythonStuff/Chess/WBishop.png'), 'w')
-WBishopR = Piece("Bishop", [2,7], pygame.image.load('PythonStuff/Chess/WBishop.png'), 'w')
-WKnightL = Piece("Knight", [1,7], pygame.image.load('PythonStuff/Chess/WKnight.png'), 'w')
-WKnightR = Piece("Knight", [6,7], pygame.image.load('PythonStuff/Chess/WKnight.png'), 'w')
-WPawn1 = Piece("Pawn", [0,6], pygame.image.load('PythonStuff/Chess/WPawn.png'), 'w')
-WPawn2 = Piece("Pawn", [1,6], pygame.image.load('PythonStuff/Chess/WPawn.png'), 'w')
-WPawn3 = Piece("Pawn", [2,6], pygame.image.load('PythonStuff/Chess/WPawn.png'), 'w')
-WPawn4 = Piece("Pawn", [3,6], pygame.image.load('PythonStuff/Chess/WPawn.png'), 'w')
-WPawn5 = Piece("Pawn", [4,6], pygame.image.load('PythonStuff/Chess/WPawn.png'), 'w')
-WPawn6 = Piece("Pawn", [5,6], pygame.image.load('PythonStuff/Chess/WPawn.png'), 'w')
-WPawn7 = Piece("Pawn", [6,6], pygame.image.load('PythonStuff/Chess/WPawn.png'), 'w')
-WPawn8 = Piece("Pawn", [7,6], pygame.image.load('PythonStuff/Chess/WPawn.png'), 'w')
+WKing = Piece("King", [3,7], pygame.image.load(MAIN_FILE_PATH + 'WKing.png'), True)
+WQueen = Piece("Queen", [4,7], pygame.image.load(MAIN_FILE_PATH + 'WQueen.png'), True)
+WRookL = Piece("Rook", [0,7], pygame.image.load(MAIN_FILE_PATH + 'WRook.png'), True)
+WRookR = Piece("Rook", [7,7], pygame.image.load(MAIN_FILE_PATH + 'WRook.png'), True)
+WBishopL = Piece("Bishop", [5,7], pygame.image.load(MAIN_FILE_PATH + 'WBishop.png'), True)
+WBishopR = Piece("Bishop", [2,7], pygame.image.load(MAIN_FILE_PATH + 'WBishop.png'), True)
+WKnightL = Piece("Knight", [1,7], pygame.image.load(MAIN_FILE_PATH + 'WKnight.png'), True)
+WKnightR = Piece("Knight", [6,7], pygame.image.load(MAIN_FILE_PATH + 'WKnight.png'), True)
+WPawn1 = Piece("Pawn", [0,6], pygame.image.load(MAIN_FILE_PATH + 'WPawn.png'), True)
+WPawn2 = Piece("Pawn", [1,6], pygame.image.load(MAIN_FILE_PATH + 'WPawn.png'), True)
+WPawn3 = Piece("Pawn", [2,6], pygame.image.load(MAIN_FILE_PATH + 'WPawn.png'), True)
+WPawn4 = Piece("Pawn", [3,6], pygame.image.load(MAIN_FILE_PATH + 'WPawn.png'), True)
+WPawn5 = Piece("Pawn", [4,6], pygame.image.load(MAIN_FILE_PATH + 'WPawn.png'), True)
+WPawn6 = Piece("Pawn", [5,6], pygame.image.load(MAIN_FILE_PATH + 'WPawn.png'), True)
+WPawn7 = Piece("Pawn", [6,6], pygame.image.load(MAIN_FILE_PATH + 'WPawn.png'), True)
+WPawn8 = Piece("Pawn", [7,6], pygame.image.load(MAIN_FILE_PATH + 'WPawn.png'), True)
 
 def infoBox():
-    pygame.draw.rect(win, (255,255,205), (400,0,200,400))
+    # pygame.draw.rect(win, (255,255,205), (400,0,200,400))
+    win.blit(parchment, (400, 0))
+
     text = font.render("Moves: " +str(Piece.moves), 1, black)
     win.blit(text, (410, 10))
-    turnText = font.render("Turn: " + Piece.turn, 1, black)
-    win.blit(turnText, (410,35))
+
+    turnMessage = "Turn: " + ("White" if Piece.whiteTurn else "Black")
+    turnText = font.render(turnMessage, 1, black)
+    win.blit(turnText, (410, 35))
+
+    blackPoints = font.render("Black: " + str(Piece.blackPoints), 1, black)
+    win.blit(blackPoints, (410, 70))
+    whitePoints = font.render("White: " + str(Piece.whitePoints), 1, black)
+    win.blit(whitePoints, (410, 85))
     
     pygame.draw.rect(win, black, (420, 325, 160, 50))
-    resetText = font.render("RESET", 1, white)
-    win.blit(resetText, (440,330))
+    resetText = resetFont.render("RESET", 1, white)
+    win.blit(resetText, (460,330))
 
 
 def update():
@@ -183,9 +255,10 @@ def update():
     
     pygame.display.update()
 
-font = pygame.font.SysFont('bradleyhanditc', 30, True)
+font = pygame.font.SysFont('bradleyhanditc', 20, True)
 resetFont = pygame.font.SysFont('Arial', 30, True)
 running = True
+update()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -196,14 +269,14 @@ while running:
 
             if pygame.mouse.get_pressed()[0]:       # CHECKS IF ITS LEFT CLICK
                 if Piece.activeTile:
-                    if Piece.isOccupied:
+                    if Piece.isOccupied: # IF TILE CLICKED AND TILE ALREADY SELECTED HAS PIECE
                         # print("Trying to move")
                         Piece.targetTile = getClickedTile(pygame.mouse.get_pos())
-                        Piece.checkValid(Piece.pieceSelected)
+                        Piece.checkValid(Piece.pieceSelected) # <----------------------------------------------
                     else:
                         Piece.activeTile = getClickedTile(pygame.mouse.get_pos())
                         inhabitant = Piece.getPieceOnTile(Piece.activeTile)
-                        if inhabitant and inhabitant.colour == Piece.turn:
+                        if inhabitant and inhabitant.isWhite == Piece.whiteTurn:
                             Piece.pieceSelected = inhabitant
                             Piece.isOccupied = True
                         else:
@@ -212,7 +285,7 @@ while running:
                 else:
                     Piece.activeTile = getClickedTile(pygame.mouse.get_pos())
                     inhabitant = Piece.getPieceOnTile(Piece.activeTile)
-                    if inhabitant and inhabitant.colour == Piece.turn:
+                    if inhabitant and inhabitant.isWhite == Piece.whiteTurn:
                         Piece.pieceSelected = inhabitant
                         Piece.isOccupied = True
                     else:
@@ -220,5 +293,12 @@ while running:
                         Piece.isOccupied = False
             else:   #RESETS ACTIVETILE TO NONE IF RIGHT OR MIDDLE CLICK -- DESELECTS TILE
                 reset()
+            update()
 
-    update()
+    # update()
+
+
+# TO ADD
+#  + Check if king is in check
+#  + Castling
+#  + Allow pawn to take pieces
