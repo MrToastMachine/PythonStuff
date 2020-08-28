@@ -301,4 +301,3 @@ while running:
 # TO ADD
 #  + Check if king is in check
 #  + Castling
-#  + Allow pawn to take pieces
